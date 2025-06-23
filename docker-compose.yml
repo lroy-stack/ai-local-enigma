@@ -80,6 +80,8 @@ services:
     container_name: open-webui
     expose:
       - 8080/tcp
+    environment: 
+    - OLLAMA_BASE_URL=http://ollama:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
