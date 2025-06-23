@@ -216,6 +216,56 @@ def check_and_fix_docker_compose_for_searxng():
     
     except Exception as e:
         print(f"Error checking/modifying docker-compose.yml for SearXNG: {e}")
+def configure_ollama_connection():
+    """Ensure Open WebUI can connect to Ollama by adding OLLAMA_BASE_URL."""
+    print("Configuring Ollama connection for Open WebUI...")
+    
+    docker_compose_path = "docker-compose.yml"
+    if not os.path.exists(docker_compose_path):
+        print(f"Warning: Docker Compose file not found at {docker_compose_path}")
+        return
+    
+    try:
+        with open(docker_compose_path, 'r') as file:
+            content = file.read()
+        
+        # Check if OLLAMA_BASE_URL is already configured
+        if "OLLAMA_BASE_URL" not in content:
+            print("OLLAMA_BASE_URL not found in docker-compose.yml, adding it...")
+            
+            # Find the open-webui service section
+            lines = content.split('\n')
+            modified_lines = []
+            i = 0
+            while i < len(lines):
+                modified_lines.append(lines[i])
+                
+                # Look for the open-webui service
+                if 'open-webui:' in lines[i] and not lines[i].strip().startswith('#'):
+                    # Find the expose section
+                    j = i + 1
+                    while j < len(lines) and lines[j].startswith(' '):
+                        modified_lines.append(lines[j])
+                        if '- 8080/tcp' in lines[j]:
+                            # Add environment section after expose
+                            indent = '    '  # Same indentation as expose
+                            modified_lines.append(f'{indent}environment:')
+                            modified_lines.append(f'{indent}  - OLLAMA_BASE_URL=http://ollama:11434')
+                            print("Added OLLAMA_BASE_URL configuration")
+                        j += 1
+                    i = j - 1
+                i += 1
+            
+            # Write the modified content back
+            with open(docker_compose_path, 'w') as file:
+                file.write('\n'.join(modified_lines))
+                
+        else:
+            print("OLLAMA_BASE_URL already configured")
+            
+    except Exception as e:
+        print(f"Error configuring Ollama connection: {e}")
+        print("Please manually add 'OLLAMA_BASE_URL=http://ollama:11434' to open-webui environment")
 
 def main():
     parser = argparse.ArgumentParser(description='Start the local AI and Supabase services.')
@@ -231,6 +281,8 @@ def main():
     # Generate SearXNG secret key and check docker-compose.yml
     generate_searxng_secret_key()
     check_and_fix_docker_compose_for_searxng()
+    
+    configure_ollama_connection()
     
     stop_existing_containers(args.profile)
     
