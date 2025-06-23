@@ -40,6 +40,13 @@
     reverse_proxy neo4j:7474
 }
 
+# Neo4j Bolt (NECESARIO)
+{$NEO4J_HOSTNAME}:7687 {
+    reverse_proxy neo4j:7687
+}
+
+import /etc/caddy/addons/*.conf
+
 # # SearXNG
 # {$SEARXNG_HOSTNAME} {
 #     encode zstd gzip
